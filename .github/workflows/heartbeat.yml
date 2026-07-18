@@ -1,0 +1,22 @@
+name: Daily Heartbeat
+
+on:
+  schedule:
+    # 每日 UTC 01:00 = HK 時間 09:00 朝早
+    - cron: '0 1 * * *'
+  workflow_dispatch: {}   # 允許手動 trigger 測試
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Send heartbeat
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          PRODUCT_URL: ${{ vars.PRODUCT_URL || 'https://www.e-capcom.com/shop/g/gC00008302/' }}
+          PRODUCT_NAME: ${{ vars.PRODUCT_NAME || 'Rockman Granny Street Fighter 6 Jamie' }}
+        run: python heartbeat.py
