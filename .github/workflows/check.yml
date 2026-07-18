@@ -1,0 +1,47 @@
+name: Check Capcom Stock
+
+on:
+  schedule:
+    # 每 5 分鐘 run 一次
+    # (GitHub free tier 有 2000 分鐘/月, 5 min interval = 288 runs/day ≈ 90 min/day ≈ 2700 min/month
+    #  超咗少少,但每次 run 只用 ~5 秒,實際 usage 好低)
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}   # 允許手動 trigger 用來測試
+
+# 需要寫 permission 因為要 commit 返 state.json
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: check-stock
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run stock check
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          PRODUCT_URL: ${{ vars.PRODUCT_URL || 'https://www.e-capcom.com/shop/g/gC00008302/' }}
+          PRODUCT_NAME: ${{ vars.PRODUCT_NAME || 'Rockman Granny Street Fighter 6 Jamie' }}
+        run: python check_stock.py
+
+      - name: Commit state changes
+        run: |
+          if ! git diff --quiet state.json 2>/dev/null; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add state.json
+            git commit -m "Update state [skip ci]"
+            git push
+          else
+            echo "No state change to commit"
+          fi
