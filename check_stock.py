@@ -12,6 +12,7 @@ Env vars:
   PRODUCT_NAME      — 商品名 (用喺 notification 標題)
 """
 import os
+import re
 import sys
 import json
 import time
@@ -90,7 +91,14 @@ def save_state(status: str):
     )
 
 
-def push_ntfy(title: str, message: str, priority: int = 5, click: str = None, tags: str = None):
+def extract_goods_id(url: str) -> str:
+    """Extract 'C00008302' from 'https://www.e-capcom.com/shop/g/gC00008302/'"""
+    m = re.search(r"/g/g([A-Z0-9]+)", url)
+    return m.group(1) if m else ""
+
+
+def push_ntfy(title: str, message: str, priority: int = 5, click: str = None,
+              tags: str = None, actions: str = None):
     """Send push via ntfy.sh"""
     if not NTFY_TOPIC:
         print("[WARN] NTFY_TOPIC 未設定,skip push")
@@ -104,6 +112,9 @@ def push_ntfy(title: str, message: str, priority: int = 5, click: str = None, ta
         headers["Click"] = click
     if tags:
         headers["Tags"] = tags
+    if actions:
+        # ntfy Actions header:多個 action 用 ';' 分隔,格式:type, label, url
+        headers["Actions"] = actions.encode("utf-8")
     req = urllib.request.Request(url, data=message.encode("utf-8"), headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
@@ -136,12 +147,25 @@ def main():
     # 只喺 out_of_stock → in_stock 轉變嗰刻通知
     if status == "in_stock" and prev != "in_stock":
         print("🎉 STOCK AVAILABLE — sending push!")
+        goods_id = extract_goods_id(PRODUCT_URL)
+        # e-capcom 一鍵加 cart URL:訪問呢個 URL 會自動加 item 入 cart 兼跳去 cart 頁
+        cart_url = (
+            f"https://www.e-capcom.com/shop/cart/cart.aspx?goods={goods_id}"
+            if goods_id else PRODUCT_URL
+        )
+        # ntfy Actions:iPhone 通知上會出兩個大 button
+        #   view = 撳咗開 URL 喺 Safari
+        actions = (
+            f"view, 🛒 加入 Cart 去結帳, {cart_url}, clear=true;"
+            f"view, 👀 睇商品詳情, {PRODUCT_URL}, clear=true"
+        )
         push_ntfy(
             title=f"🎉 {PRODUCT_NAME} 有貨!",
-            message=f"立即去買:\n{PRODUCT_URL}",
+            message=f"撳「🛒 加入 Cart 去結帳」自動 add to cart:\n{PRODUCT_URL}",
             priority=5,          # urgent — 大聲
-            click=PRODUCT_URL,   # 撳通知直接開網頁
+            click=cart_url,      # 撳通知本身 = 一鍵去 cart(等於「加入 Cart」button)
             tags="rotating_light,shopping_cart",
+            actions=actions,
         )
 
     # 更新 state (即使 status = unknown 都寫返,keep 記憶)

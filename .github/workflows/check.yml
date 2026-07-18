@@ -2,9 +2,10 @@ name: Check Capcom Stock
 
 on:
   schedule:
-    # 每 5 分鐘 run 一次
-    # (GitHub free tier 有 2000 分鐘/月, 5 min interval = 288 runs/day ≈ 90 min/day ≈ 2700 min/month
-    #  超咗少少,但每次 run 只用 ~5 秒,實際 usage 好低)
+    # 每 5 分鐘 trigger 一次(GitHub cron 最短就係 5 分鐘)
+    # 每次 trigger 內部 loop 5 次 × 60 秒 sleep → 有效 interval = 1 分鐘
+    # 每次 workflow run ~5 分鐘 → 一日 24×12=288 次 × 5min = 1440 min/日
+    # 需要 public repo 先有無限 Actions minutes(private tier 2000 min/月不夠)
     - cron: '*/5 * * * *'
   workflow_dispatch: {}   # 允許手動 trigger 用來測試
 
@@ -27,12 +28,21 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Run stock check
+      - name: Run stock check (5 times × 60s sleep = 1-min effective interval)
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           PRODUCT_URL: ${{ vars.PRODUCT_URL || 'https://www.e-capcom.com/shop/g/gC00008302/' }}
           PRODUCT_NAME: ${{ vars.PRODUCT_NAME || 'Rockman Granny Street Fighter 6 Jamie' }}
-        run: python check_stock.py
+        run: |
+          for i in 1 2 3 4 5; do
+            echo ""
+            echo "═══════════════ Check #$i / 5 ═══════════════"
+            python check_stock.py || echo "[WARN] check #$i failed, continuing"
+            if [ $i -lt 5 ]; then
+              echo "── sleeping 60s ──"
+              sleep 60
+            fi
+          done
 
       - name: Commit state changes
         run: |
