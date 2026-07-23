@@ -1,84 +1,57 @@
 """
 Date-based reminders — 到期就 push,唔會重複。
-State 用 state.json 內 'sent_reminders' list keep track。
 
-新增 reminder 只需要 append 落 REMINDERS list。
-Reminder 只 push 落 REMINDER_TOPICS (預設 TestMode),
-唔會 spam 到 stock alert 個 Jamie01 topic。
+支援:
+- 一次性(冇 repeat_days)
+- 週期性(repeat_days=7 每星期,until=... 到期停)
+- 動態 {days_left} template — 顯示 deadline 倒數
+
+State 用 state.json 內 'sent_reminders' list keep track (格式 "id@YYYY-MM-DD")。
+Reminder 只 push 落 REMINDER_TOPICS,唔會 spam 到 stock alert 個 Jamie01。
 """
 from datetime import datetime, timezone, timedelta
 
 HK_TZ = timezone(timedelta(hours=8))
-
-# Reminders 專用 topic list — 唔跟 stock alert 嘅 NTFY_TOPICS
 REMINDER_TOPICS = ["TestMode"]
 
 # ─────────────────────────────────────────────────────────────
-# 到期未 send 就 push。id 用嚟去重,永久記住 (state.sent_reminders)
+# 到期未 send 就 push
+# id 用嚟去重(recurring 會加日期後綴,例:"weekly_reg@2026-07-30")
 # ─────────────────────────────────────────────────────────────
 REMINDERS = [
-    # ───── BLNST ─────────────────────────────────────────
+    # ───── 每星期提報 BLNST + CRE(到 CRE 截止就停)─────
     {
-        "id": "blnst_reg_tonight",
+        "id": "weekly_exam_reg",
         "date": "2026-07-23",
         "hour": 19,
-        "title": "🎓 記得報 BLNST!",
+        "repeat_days": 7,           # 每 7 日 fire 一次
+        "until": "2026-08-07",      # CRE 截止日,之後停
+        "deadline": "2026-08-07",   # 用嚟計 {days_left}
+        "title": "📝 報考試提醒(BLNST + CRE)",
         "message": (
-            "今晚 5 分鐘搞掂:\n"
-            "https://www.csbexam.gov.hk?lang=hk\n"
+            "━━━ CRE 報名截止:2026-08-07(剩 {days_left} 日)━━━\n"
+            "▸ 報名:https://www.csb.gov.hk/tc_chi/recruit/cre/949.html\n"
+            "▸ 一次過 tick:英文/中文/能力傾向\n"
             "\n"
-            "揀最近 slot(下星期都得),稅務大樓 37/F 30 分鐘考完,即日出證書。\n"
-            "20 條 MC,答啱 10 條就 pass。免費。"
-        ),
-        "click": "https://www.csbexam.gov.hk?lang=hk",
-        "tags": "mortar_board",
-        "priority": 4,
-    },
-    {
-        "id": "blnst_check_in_1",
-        "date": "2026-07-28",
-        "hour": 12,
-        "title": "❓ BLNST 你報咗未?",
-        "message": (
-            "如果未報,趁 CRE 未黎(10-03)搞掂晒:\n"
-            "https://www.csbexam.gov.hk?lang=hk"
-        ),
-        "click": "https://www.csbexam.gov.hk?lang=hk",
-        "tags": "eyes",
-        "priority": 3,
-    },
-
-    # ───── CRE 報名期 ────────────────────────────────────
-    {
-        "id": "cre_2026_oct_open",
-        "date": "2026-07-25",
-        "hour": 9,
-        "title": "🎯 CRE 綜合招聘考試今日開始報名!",
-        "message": (
-            "報名期:07-25 至 08-07 (14日 window)\n"
-            "考試日:2026-10-03\n"
+            "━━━ BLNST 全年任揀(冇 deadline)━━━\n"
+            "▸ 報名:https://www.csbexam.gov.hk?lang=hk\n"
+            "▸ 30 分鐘,20 條 MC,即日拎證書\n"
             "\n"
-            "報名網址:\n"
-            "https://www.csb.gov.hk/tc_chi/recruit/cre/949.html\n"
-            "\n"
-            "同一次報名可以選:\n"
-            "- 英文運用(拎二級)\n"
-            "- 中文運用(拎一級)\n"
-            "- 能力傾向測試(拎及格)\n"
-            "\n"
-            "💡 BLNST 已全年隨時網上考,唔洗等呢輪"
+            "報咗就當我冇 send 過,一星期再嘈你。"
         ),
         "click": "https://www.csb.gov.hk/tc_chi/recruit/cre/949.html",
-        "tags": "memo,mortar_board",
+        "tags": "memo",
         "priority": 4,
     },
+
+    # ───── CRE 截止前 2 日最後警告 ────────────────────────
     {
         "id": "cre_2026_oct_final_warn",
         "date": "2026-08-05",
         "hour": 10,
         "title": "⏰ CRE 剩 2 日截止(08-07)!",
         "message": (
-            "如果未報 CRE(下次要等 2027 年),今日或聽日搞掂:\n"
+            "如果未報 CRE(下次要等 2027 年),今日或聽日一定要搞掂:\n"
             "https://www.csb.gov.hk/tc_chi/recruit/cre/949.html"
         ),
         "click": "https://www.csb.gov.hk/tc_chi/recruit/cre/949.html",
@@ -86,10 +59,10 @@ REMINDERS = [
         "priority": 5,
     },
 
-    # ───── AP II 招聘留意 ───────────────────────────────
+    # ───── AP II 招聘留意(順延一年,2027)─────────────────
     {
-        "id": "ap2_watch_oct",
-        "date": "2026-10-15",
+        "id": "ap2_watch_oct_2027",
+        "date": "2027-10-15",
         "hour": 9,
         "title": "👀 開始留意 AP II 招聘公告",
         "message": (
@@ -103,8 +76,8 @@ REMINDERS = [
         "priority": 3,
     },
     {
-        "id": "ap2_watch_nov",
-        "date": "2026-11-15",
+        "id": "ap2_watch_nov_2027",
+        "date": "2027-11-15",
         "hour": 9,
         "title": "👀 再 check AP II 招聘公告",
         "message": (
@@ -116,15 +89,15 @@ REMINDERS = [
         "priority": 3,
     },
     {
-        "id": "ap2_watch_dec",
-        "date": "2026-12-15",
+        "id": "ap2_watch_dec_2027",
+        "date": "2027-12-15",
         "hour": 9,
         "title": "👀 最後 check AP II 招聘",
         "message": (
             "12 月係 AP II 招聘 window 最後階段:\n"
             "https://csboa2.csb.gov.hk/csboa/jve/JVE_001_zh.action\n"
             "\n"
-            "如果呢輪 miss 咗,要等 2027 年 10 月。"
+            "如果呢輪 miss 咗,要等 2028 年 10 月。"
         ),
         "click": "https://csboa2.csb.gov.hk/csboa/jve/JVE_001_zh.action",
         "tags": "eyes,briefcase",
@@ -133,30 +106,64 @@ REMINDERS = [
 ]
 
 
+def _fire_times(r: dict, now_hk: datetime):
+    """Yield all datetime instances when this reminder should have fired,
+    up to (and including) now_hk."""
+    start = datetime.fromisoformat(r["date"]).replace(
+        hour=r.get("hour", 9), tzinfo=HK_TZ
+    )
+    if now_hk < start:
+        return
+
+    until = None
+    if r.get("until"):
+        until = datetime.fromisoformat(r["until"]).replace(
+            hour=23, minute=59, tzinfo=HK_TZ
+        )
+
+    repeat = r.get("repeat_days", 0)
+    current = start
+    while current <= now_hk:
+        if until and current > until:
+            break
+        yield current
+        if not repeat:
+            break
+        current += timedelta(days=repeat)
+
+
+def _render_message(r: dict, fire_time: datetime) -> str:
+    """Fill dynamic placeholders like {days_left}."""
+    msg = r["message"]
+    if "{days_left}" in msg and r.get("deadline"):
+        dl = datetime.fromisoformat(r["deadline"]).replace(tzinfo=HK_TZ)
+        days_left = max(0, (dl.date() - fire_time.date()).days)
+        msg = msg.replace("{days_left}", str(days_left))
+    return msg
+
+
 def check_reminders(state: dict, push_fn):
     """跑一次:到期未 send 嘅 reminder 全部 push,成功就 mark。"""
     now_hk = datetime.now(HK_TZ)
     sent = set(state.get("sent_reminders", []))
 
     for r in REMINDERS:
-        if r["id"] in sent:
-            continue
-        due = datetime.fromisoformat(r["date"]).replace(
-            hour=r.get("hour", 9), tzinfo=HK_TZ
-        )
-        if now_hk < due:
-            continue
+        for ft in _fire_times(r, now_hk):
+            fire_id = f"{r['id']}@{ft:%Y-%m-%d}"
+            if fire_id in sent:
+                continue
 
-        print(f"→ Reminder due: {r['id']} → topics={REMINDER_TOPICS}")
-        ok = push_fn(
-            title=r["title"],
-            message=r["message"],
-            priority=r.get("priority", 5),
-            click=r.get("click"),
-            tags=r.get("tags"),
-            topics=REMINDER_TOPICS,
-        )
-        if ok:
-            sent.add(r["id"])
+            message = _render_message(r, ft)
+            print(f"→ Reminder due: {fire_id}")
+            ok = push_fn(
+                title=r["title"],
+                message=message,
+                priority=r.get("priority", 5),
+                click=r.get("click"),
+                tags=r.get("tags"),
+                topics=REMINDER_TOPICS,
+            )
+            if ok:
+                sent.add(fire_id)
 
     state["sent_reminders"] = sorted(sent)
