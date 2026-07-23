@@ -107,10 +107,13 @@ def _post_ntfy(topic: str, message: bytes, headers: dict) -> bool:
 
 
 def push_ntfy(title: str, message: str, priority: int = 5, click: str = None,
-              tags: str = None, actions: str = None) -> bool:
-    """Send push via ntfy.sh — 逐個 topic 都 push"""
-    if not NTFY_TOPICS:
-        print("[WARN] NTFY_TOPIC 未設定,skip push")
+              tags: str = None, actions: str = None, topics: list = None) -> bool:
+    """Send push via ntfy.sh — 逐個 topic 都 push
+    topics: override NTFY_TOPICS list (例如 reminder 只想 push 落 TestMode)
+    """
+    target_topics = topics if topics else NTFY_TOPICS
+    if not target_topics:
+        print("[WARN] 冇 topic 可 push,skip")
         return False
     headers_base = {
         "Title": title.encode("utf-8"),
@@ -125,7 +128,7 @@ def push_ntfy(title: str, message: str, priority: int = 5, click: str = None,
 
     body = message.encode("utf-8")
     any_ok = False
-    for topic in NTFY_TOPICS:
+    for topic in target_topics:
         if _post_ntfy(topic, body, dict(headers_base)):
             any_ok = True
     return any_ok
@@ -204,6 +207,14 @@ def main():
         state["last_status"] = status
 
     maybe_send_heartbeat(state, status)
+
+    # Date-based reminders (CRE / BLNST 等)
+    try:
+        from reminders import check_reminders
+        check_reminders(state, push_ntfy)
+    except Exception as e:
+        print(f"[WARN] reminders check fail: {e}")
+
     save_state(state)
 
 
