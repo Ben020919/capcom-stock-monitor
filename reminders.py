@@ -19,7 +19,7 @@ REMINDER_TOPICS = ["TestMode"]
 # id 用嚟去重(recurring 會加日期後綴,例:"weekly_reg@2026-07-30")
 # ─────────────────────────────────────────────────────────────
 REMINDERS = [
-    # ───── 每星期提報 BLNST + CRE(到 CRE 截止就停)─────
+    # ───── 每星期提報 CRE + BLNST(到 CRE 截止就停)─────
     {
         "id": "weekly_exam_reg",
         "date": "2026-07-23",
@@ -27,17 +27,23 @@ REMINDERS = [
         "repeat_days": 7,           # 每 7 日 fire 一次
         "until": "2026-08-07",      # CRE 截止日,之後停
         "deadline": "2026-08-07",   # 用嚟計 {days_left}
-        "title": "📝 報考試提醒(BLNST + CRE)",
+        "title": "📝 報名提醒:CRE(綜合招聘)+ BLNST(基本法/國安法)",
         "message": (
-            "━━━ CRE 報名截止:2026-08-07(剩 {days_left} 日)━━━\n"
-            "▸ 報名:https://www.csb.gov.hk/tc_chi/recruit/cre/949.html\n"
-            "▸ 一次過 tick:英文/中文/能力傾向\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "① CRE 綜合招聘考試\n"
+            "  📅 截止:2026-08-07 (剩 {days_left} 日)\n"
+            "  🎯 考試日:2026-10-03\n"
+            "  🔗 https://www.csb.gov.hk/tc_chi/recruit/cre/949.html\n"
+            "  一次過 tick:英文運用/中文運用/能力傾向\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "② BLNST《基本法及香港國安法》測試\n"
+            "  📅 冇 deadline,全年任揀日子\n"
+            "  🎯 學位程度數碼版,稅務大樓 37/F\n"
+            "  🔗 https://www.csbexam.gov.hk?lang=hk\n"
+            "  30 分鐘,20 條 MC,免費,即日拎證書\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             "\n"
-            "━━━ BLNST 全年任揀(冇 deadline)━━━\n"
-            "▸ 報名:https://www.csbexam.gov.hk?lang=hk\n"
-            "▸ 30 分鐘,20 條 MC,即日拎證書\n"
-            "\n"
-            "報咗就當我冇 send 過,一星期再嘈你。"
+            "兩個都報咗就當我冇 send 過,一星期再嘈你。"
         ),
         "click": "https://www.csb.gov.hk/tc_chi/recruit/cre/949.html",
         "tags": "memo",
@@ -49,10 +55,14 @@ REMINDERS = [
         "id": "cre_2026_oct_final_warn",
         "date": "2026-08-05",
         "hour": 10,
-        "title": "⏰ CRE 剩 2 日截止(08-07)!",
+        "title": "⏰ CRE(綜合招聘考試)剩 2 日截止!",
         "message": (
-            "如果未報 CRE(下次要等 2027 年),今日或聽日一定要搞掂:\n"
-            "https://www.csb.gov.hk/tc_chi/recruit/cre/949.html"
+            "CRE 綜合招聘考試\n"
+            "📅 08-07 截止,miss 咗要等 2027 年!\n"
+            "🔗 https://www.csb.gov.hk/tc_chi/recruit/cre/949.html\n"
+            "\n"
+            "順便:BLNST《基本法及國安法》測試如果都未報,\n"
+            "🔗 https://www.csbexam.gov.hk?lang=hk (全年隨時)"
         ),
         "click": "https://www.csb.gov.hk/tc_chi/recruit/cre/949.html",
         "tags": "alarm_clock",
