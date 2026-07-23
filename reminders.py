@@ -19,12 +19,12 @@ REMINDER_TOPICS = ["TestMode"]
 # id 用嚟去重(recurring 會加日期後綴,例:"weekly_reg@2026-07-30")
 # ─────────────────────────────────────────────────────────────
 REMINDERS = [
-    # ───── 每星期提報 CRE + BLNST(到 CRE 截止就停)─────
+    # ───── 每日 12:00 提報 CRE + BLNST(到 CRE 截止就停)─────
     {
-        "id": "weekly_exam_reg",
+        "id": "daily_exam_reg",
         "date": "2026-07-23",
-        "hour": 19,
-        "repeat_days": 7,           # 每 7 日 fire 一次
+        "hour": 12,
+        "repeat_days": 1,           # 每日 fire 一次
         "until": "2026-08-07",      # CRE 截止日,之後停
         "deadline": "2026-08-07",   # 用嚟計 {days_left}
         "title": "📝 報名提醒:CRE(綜合招聘)+ BLNST(基本法/國安法)",
