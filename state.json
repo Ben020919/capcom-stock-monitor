@@ -1,6 +1,6 @@
 {
   "last_status": "out_of_stock",
-  "last_checked": 1785373439,
+  "last_checked": 1785385001,
   "last_heartbeat_date": "2026-07-30",
   "sent_reminders": [
     "daily_exam_reg@2026-07-23",
@@ -9,6 +9,7 @@
     "daily_exam_reg@2026-07-26",
     "daily_exam_reg@2026-07-27",
     "daily_exam_reg@2026-07-28",
-    "daily_exam_reg@2026-07-29"
+    "daily_exam_reg@2026-07-29",
+    "daily_exam_reg@2026-07-30"
   ]
 }
